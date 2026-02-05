@@ -4,7 +4,7 @@ A full-stack web application that performs deep research using both OpenAI's Dee
 
 ## 🌐 Live Demo
 
-**Deployed Application**: [https://research-assistant-production-4235.up.railway.app](https://research-assistant-production-4235.up.railway.app)
+**Deployed Application**: [https://research-assistant-7c0m.onrender.com/dashboard](https://research-assistant-7c0m.onrender.com/dashboard)
 
 Try it out with Google OAuth authentication!
 
@@ -200,7 +200,7 @@ research-assistant/
 │   └── index.ts                   # TypeScript type definitions
 ├── public/                        # Static assets
 ├── .env.example                   # Environment variables template
-└── railway.json                   # Railway deployment configuration
+└── render.yaml                    # Render deployment configuration
 ```
 
 ## 🔒 Security Notes
