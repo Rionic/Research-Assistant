@@ -4,7 +4,7 @@ A full-stack web application that performs deep research using both OpenAI's Dee
 
 ## 🌐 Live Demo
 
-**Deployed Application**: [https://research-assistant-production-4235.up.railway.app](https://research-assistant-production-4235.up.railway.app)
+**Deployed Application**: (Functionality is dependent on API key usage) [https://research-assistant-production-4235.up.railway.app](https://research-assistant-production-4235.up.railway.app)
 
 Try it out with Google OAuth authentication!
 
