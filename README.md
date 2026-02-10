@@ -1,6 +1,6 @@
-# Multi-API Deep Research Assistant
+# Multi-API Deep Research Assistant with RAG
 
-A full-stack web application that performs deep research using both OpenAI's Deep Research API and Google's Gemini API, delivering comprehensive PDF reports via email.
+A full-stack web application featuring a **Retrieval-Augmented Generation (RAG) pipeline** that performs deep research using both OpenAI and Google Gemini APIs. The system learns from previous research sessions to provide increasingly relevant and context-aware results, delivering comprehensive PDF reports via email.
 
 ## 🌐 Live Demo
 
@@ -12,15 +12,23 @@ Try it out with Google OAuth authentication!
 
 [![Watch Demo](https://img.youtube.com/vi/FUheh4Q1hdk/maxresdefault.jpg)](https://www.youtube.com/watch?v=FUheh4Q1hdk)
 
-*Watch the full workflow: authentication, research submission, refinement questions, and email delivery with PDF reports.*
+*Watch the full workflow: authentication, research submission, RAG-enhanced queries, refinement questions, and email delivery with PDF reports.*
 
 ## 🎯 Overview
 
 This application allows authenticated users to:
 - Submit research queries with interactive refinement using OpenAI
+- Leverage RAG to enhance queries with context from previous research sessions
 - Execute parallel research with both OpenAI (gpt-4o) and Google Gemini
 - Receive professional PDF reports via email with results from both APIs
 - Track research history with real-time status updates
+
+### RAG Pipeline Highlights
+- **Vector Database**: Qdrant Cloud for semantic similarity search
+- **Local Embeddings**: Xenova/all-MiniLM-L6-v2 transformer model (no external API calls)
+- **Smart Chunking**: 800-character chunks with 100-character overlap for context preservation
+- **User-Scoped Retrieval**: Each user's research history is isolated and searchable
+- **Similarity Threshold**: Only retrieves context with ≥60% semantic similarity
 
 ## 🏗️ Architecture
 
@@ -28,14 +36,17 @@ This application allows authenticated users to:
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes (serverless)
 - **Database**: Firebase Firestore
+- **Vector Database**: Qdrant Cloud (for RAG pipeline)
 - **Authentication**: Firebase Auth (Google OAuth)
 - **APIs**: OpenAI (gpt-4o), Google Gemini (gemini-2.0-flash-exp with deep research)
+- **Embeddings**: Xenova/all-MiniLM-L6-v2 (local transformer model)
 - **Email**: SendGrid
 - **PDF Generation**: jsPDF + marked (markdown parsing)
 
 ### Key Features
 - **OAuth Authentication**: Secure Gmail sign-in with Firebase Auth
 - **Interactive Refinement**: OpenAI analyzes prompts and asks clarifying questions
+- **RAG Pipeline**: Retrieval-Augmented Generation using past research to enhance new queries
 - **Deep Research**: Gemini 2.0 deep research agent for comprehensive multi-angle analysis
 - **Parallel Execution**: Runs OpenAI and Gemini simultaneously for faster results
 - **Real-time Updates**: Firestore listeners for instant status updates
@@ -50,6 +61,7 @@ This application allows authenticated users to:
 - OpenAI API key with access to `gpt-4o`
 - Google Gemini API key
 - SendGrid account with verified sender email
+- Qdrant Cloud account (free tier available)
 
 ### Installation
 
@@ -145,6 +157,22 @@ This application allows authenticated users to:
    SENDGRID_FROM_NAME=Research Assistant
    ```
 
+### Qdrant Cloud Setup (RAG Pipeline)
+
+1. Go to [Qdrant Cloud](https://cloud.qdrant.io/)
+2. Create a free cluster
+3. Get your cluster URL and API key from the dashboard
+4. Add to `.env.local`:
+   ```env
+   QDRANT_URL=https://your-cluster-id.region.cloud.qdrant.io
+   QDRANT_API_KEY=your-qdrant-api-key
+   ```
+
+The RAG pipeline automatically:
+- Chunks and embeds research results after each session
+- Retrieves similar past research when starting new queries
+- Augments prompts with relevant context (similarity threshold: 0.6)
+
 ## 📱 Usage
 
 1. **Sign In**
@@ -193,7 +221,12 @@ research-assistant/
 │   ├── firebase-admin.ts          # Firebase Admin SDK (server-side)
 │   ├── research.ts                # Shared research logic (OpenAI, Gemini, orchestration)
 │   ├── email-sender.ts            # SendGrid email delivery
-│   └── pdf-generator.ts           # jsPDF report generation with markdown
+│   ├── pdf-generator.ts           # jsPDF report generation with markdown
+│   └── rag/                       # RAG pipeline
+│       ├── index.ts               # Main exports: embedResearchResults, retrieveContext, augmentPrompt
+│       ├── chunker.ts             # Text chunking with overlap
+│       ├── embeddings.ts          # Local embedding generation (Xenova/all-MiniLM-L6-v2)
+│       └── qdrant.ts              # Qdrant vector database operations
 ├── scripts/
 │   └── test-flow.ts               # Backend integration test suite
 ├── types/
@@ -218,13 +251,33 @@ research-assistant/
 - **Parallel Execution**: Promise.all executes both APIs simultaneously for speed
 - **Markdown Parsing**: Using `marked` library for robust PDF formatting (tables, lists, etc.)
 
+### Why RAG?
+- **Context-Aware Research**: Each new query benefits from insights discovered in previous sessions
+- **Local Embeddings**: Using Xenova transformers avoids external API costs and latency for embeddings
+- **User Isolation**: Vector search is scoped per-user, ensuring privacy and relevance
+- **Graceful Degradation**: RAG failures don't block research - the system continues without context
+- **Async Embedding**: Results are embedded in the background, not blocking PDF/email delivery
+
 ### API Orchestration Flow
 ```
-User Input → OpenAI Refinement → Firestore Save → Parallel Deep Research
-                                                   ├─ OpenAI (gpt-4o)
-                                                   └─ Gemini (2.0 deep research)
-                                                         ↓
-                                                   PDF Generation → Email → Update Firestore
+User Input → OpenAI Refinement → RAG Context Retrieval → Augment Prompt
+                                         ↓
+                                   Firestore Save → Parallel Deep Research
+                                                     ├─ OpenAI (gpt-4o)
+                                                     └─ Gemini (2.0 deep research)
+                                                           ↓
+                                                     PDF Generation → Email → Update Firestore
+                                                           ↓
+                                                     Embed Results → Store in Qdrant (async)
+```
+
+### RAG Pipeline Flow
+```
+New Query → Generate Embedding → Search Qdrant (user-scoped) → Filter by Similarity (≥0.6)
+                                                                        ↓
+                                                              Augment Prompt with Context
+                                                                        ↓
+                                                              Enhanced Research Results
 ```
 
 ## 🧪 Testing

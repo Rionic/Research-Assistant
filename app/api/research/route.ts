@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { ResearchSession, StartResearchRequest, StartResearchResponse } from '@/types';
 import { getOpenAI, performResearch } from '@/lib/research';
+import { retrieveContext, augmentPrompt } from '@/lib/rag';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,13 +26,26 @@ export async function POST(request: NextRequest) {
     const refinementQuestions = await getRefinementQuestions(prompt);
 
     if (refinementQuestions.length === 0) {
+      let finalPrompt = prompt;
+      try {
+        const ragContext = await retrieveContext(prompt, userId);
+        if (ragContext.relevantResults.length > 0) {
+          finalPrompt = augmentPrompt(prompt, ragContext);
+          console.log(`Augmented prompt with ${ragContext.relevantResults.length} RAG results`);
+        } else {
+          console.log('No RAG results retrieved (no similar past research or below similarity threshold)');
+        }
+      } catch (error) {
+        console.error('RAG retrieval failed, continuing without context:', error);
+      }
+
       const session: ResearchSession = {
         id: sessionId,
         userId,
         userEmail,
         userTimezone: timezone,
         initialPrompt: prompt,
-        refinedPrompt: prompt,
+        refinedPrompt: finalPrompt,
         refinementQuestions: [],
         status: 'processing',
         createdAt: new Date(),
@@ -39,6 +53,7 @@ export async function POST(request: NextRequest) {
       };
 
       await sessionRef.set(session);
+      performResearch(sessionId, finalPrompt);
 
       return NextResponse.json({
         sessionId,

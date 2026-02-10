@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { ResearchSession, SubmitRefinementRequest, SubmitRefinementResponse } from '@/types';
 import { performResearch } from '@/lib/research';
+import { retrieveContext, augmentPrompt } from '@/lib/rag';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +38,19 @@ export async function POST(request: NextRequest) {
         .map(q => `Q: ${q.question}\nA: ${q.answer}`)
         .join('\n\n');
 
-      const refinedPrompt = `${session.initialPrompt}\n\nAdditional context:\n${questionsAndAnswers}`;
+      let refinedPrompt = `${session.initialPrompt}\n\nAdditional context:\n${questionsAndAnswers}`;
+
+      try {
+        const ragContext = await retrieveContext(session.initialPrompt, session.userId);
+        if (ragContext.relevantResults.length > 0) {
+          refinedPrompt = augmentPrompt(refinedPrompt, ragContext);
+          console.log(`Augmented prompt with ${ragContext.relevantResults.length} RAG results`);
+        } else {
+          console.log('No RAG results retrieved (no similar past research or below similarity threshold)');
+        }
+      } catch (error) {
+        console.error('RAG retrieval failed, continuing without context:', error);
+      }
 
       await sessionRef.update({
         refinedPrompt,

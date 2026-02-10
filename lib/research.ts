@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { adminDb } from '@/lib/firebase-admin';
 import { ResearchSession } from '@/types';
+import { embedResearchResults } from '@/lib/rag';
 
 export function getOpenAI() {
   return new OpenAI({
@@ -37,8 +38,10 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
     const sessionDoc = await sessionRef.get();
     const session = sessionDoc.data() as ResearchSession;
 
-    console.log('OpenAI research result length:', openaiResult.length);
-    console.log('Gemini deep research result length:', geminiResult.length);
+    embedResearchResults(session).catch(err =>
+      console.error('Background embedding failed:', err)
+    );
+
     console.log('Generating PDF and sending email with both results...');
 
     await generateAndEmailReport(session);
@@ -66,6 +69,9 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
 }
 
 async function performOpenAIResearch(prompt: string): Promise<string> {
+  
+  console.log('Starting OpenAI deep research agent...');
+  
   const completion = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages: [
