@@ -4,10 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+// Component for login page
 export default function Home() {
   const { user, loading, signInWithGoogle } = useAuth();
   const router = useRouter();
 
+  // Load  dashboard if user has signed in
   useEffect(() => {
     if (!loading && user) {
       router.push('/dashboard');

@@ -8,12 +8,14 @@ import { db } from '@/lib/firebase';
 import { ResearchSession } from '@/types';
 import NewResearchModal from '@/components/NewResearchModal';
 
+// Component for dashboard
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessions, setSessions] = useState<ResearchSession[]>([]);
-
+  
+  // Push login page if user is not signed in
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
@@ -22,14 +24,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-
+    
+    // Build firestore query for fetch
     const q = query(
       collection(db, 'research_sessions'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
 
+    // Anytime there is a change in the user's research sessions in firestore, update UI
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      // Convert snapshot to ResearchSession object
+      // Convert Firestore Timestamp objects to JavaScript Date objects
       const sessionsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -38,12 +44,14 @@ export default function Dashboard() {
         completedAt: doc.data().completedAt?.toDate(),
       })) as ResearchSession[];
 
+      // Populate past research sessions with retrieved data
       setSessions(sessionsData);
     });
 
     return () => unsubscribe();
   }, [user]);
 
+  // Maps session status to a coloured bage for display
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'refining':

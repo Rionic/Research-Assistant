@@ -5,6 +5,8 @@ export const COLLECTION_NAME = 'research_results';
 
 let qdrantClient: QdrantClient | null = null;
 
+// Qdrant file - handles direct operations for vector DB init, reads, and writes
+
 export function getQdrantClient(): QdrantClient {
   if (!qdrantClient) {
     const url = process.env.QDRANT_URL;
@@ -23,6 +25,7 @@ export function getQdrantClient(): QdrantClient {
   return qdrantClient;
 }
 
+// Grabs Qdrant collection or creates one if none exists
 export async function ensureCollection(): Promise<void> {
   const client = getQdrantClient();
 
@@ -32,14 +35,16 @@ export async function ensureCollection(): Promise<void> {
 
     if (!exists) {
       console.log(`Creating Qdrant collection: ${COLLECTION_NAME}`);
-
+      
+      // Create new collection with cosine similarity for nearest neighbour search
       await client.createCollection(COLLECTION_NAME, {
         vectors: {
           size: EMBEDDING_DIMENSION,
-          distance: 'Cosine',
+          distance: 'Cosine', 
         },
       });
 
+      // Create index for faster retrieval
       await client.createPayloadIndex(COLLECTION_NAME, {
         field_name: 'userId',
         field_schema: 'keyword',
@@ -53,6 +58,7 @@ export async function ensureCollection(): Promise<void> {
   }
 }
 
+// Vector embedding interface
 export interface VectorPoint {
   id: string;
   vector: number[];
@@ -82,6 +88,7 @@ export async function upsertVectors(points: VectorPoint[]): Promise<void> {
   });
 }
 
+// Interface for top-k most similar research embeddings
 export interface SearchResult {
   text: string;
   similarity: number;
@@ -90,16 +97,18 @@ export interface SearchResult {
   sessionId: string;
 }
 
+// Function to find top-k most similar embeddings via cosine similarity
 export async function searchSimilar(
   queryVector: number[],
   userId: string,
   topK: number = 5
 ): Promise<SearchResult[]> {
   const client = getQdrantClient();
-
+  
   const results = await client.search(COLLECTION_NAME, {
     vector: queryVector,
     limit: topK,
+    // Filter on current user
     filter: {
       must: [
         {
@@ -108,6 +117,7 @@ export async function searchSimilar(
         },
       ],
     },
+    // Return metadata alongside vector
     with_payload: true,
   });
 

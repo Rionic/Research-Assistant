@@ -23,6 +23,7 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
 
   if (!isOpen) return null;
 
+  // Call research route upon submission of initial research prompt
   const handleSubmitPrompt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || !user) return;
@@ -31,7 +32,6 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
 
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
       const response = await fetch('/api/research', {
         method: 'POST',
         headers: {
@@ -46,9 +46,9 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
         throw new Error('Failed to start research');
       }
 
+      // Update states accordingly
       const data = await response.json();
       setSessionId(data.sessionId);
-
       if (data.refinementQuestions && data.refinementQuestions.length > 0) {
         setRefinementQuestions(data.refinementQuestions);
         setStep('refinement');
@@ -63,11 +63,10 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
       setIsLoading(false);
     }
   };
-
+  // Call refinement once user submits prompt
   const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentAnswer.trim() || !sessionId || !user) return;
-
     try {
       const response = await fetch('/api/refinement', {
         method: 'POST',
@@ -85,8 +84,9 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
         throw new Error('Failed to submit answer');
       }
 
+      // Update states
       const data = await response.json();
-
+      
       const updatedQuestions = [...refinementQuestions];
       updatedQuestions[currentQuestionIndex].answer = currentAnswer;
       setRefinementQuestions(updatedQuestions);
@@ -103,7 +103,8 @@ export default function NewResearchModal({ isOpen, onClose }: NewResearchModalPr
       alert('Failed to submit answer. Please try again.');
     }
   };
-
+  
+  // Setup Firestore listener and client SDK
   const watchSession = (sessionId: string) => {
     const sessionRef = doc(db, 'research_sessions', sessionId);
 

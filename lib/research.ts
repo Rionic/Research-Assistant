@@ -27,6 +27,7 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
       performGeminiResearch(refinedPrompt),
     ]);
 
+    // Research complete
     await sessionRef.update({
       openaiResult,
       geminiResult,
@@ -38,6 +39,7 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
     const sessionDoc = await sessionRef.get();
     const session = sessionDoc.data() as ResearchSession;
 
+    // Embedding entry point
     embedResearchResults(session).catch(err =>
       console.error('Background embedding failed:', err)
     );
@@ -45,7 +47,8 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
     console.log('Generating PDF and sending email with both results...');
 
     await generateAndEmailReport(session);
-
+    
+    // Email sent
     await sessionRef.update({
       status: 'email_sent',
       emailSentAt: new Date(),
@@ -110,22 +113,26 @@ async function performGeminiResearch(prompt: string): Promise<string> {
     let pollCount = 0;
     const maxPolls = 120;
 
+    // If polling takes too long, terminate it
     while (pollCount < maxPolls) {
       completedInteraction = await gemini.interactions.get(interaction.id);
 
       console.log(`Polling attempt ${pollCount + 1}, status: ${completedInteraction.status || 'unknown'}`);
 
+      // Failure, output error & end loop
       if (completedInteraction.status === 'failed' || completedInteraction.status === 'cancelled') {
         console.error('Deep research failed or was cancelled');
         break;
       }
 
+      // Polling continues
       if (completedInteraction.status === 'in_progress' || completedInteraction.status === 'requires_action') {
         await new Promise(resolve => setTimeout(resolve, 5000));
         pollCount++;
         continue;
       }
 
+      // Finished
       console.log('Deep research completed!');
       break;
     }
@@ -134,6 +141,7 @@ async function performGeminiResearch(prompt: string): Promise<string> {
       console.warn('Deep research timed out after polling');
     }
 
+    // Extract research text from interaction
     let result = '';
     if (completedInteraction.outputs && completedInteraction.outputs.length > 0) {
       const lastOutput = completedInteraction.outputs[completedInteraction.outputs.length - 1];

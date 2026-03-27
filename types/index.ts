@@ -7,19 +7,20 @@ export interface User {
 }
 
 export type ResearchStatus =
-  | 'pending'
   | 'refining'
   | 'processing'
   | 'completed'
   | 'failed'
   | 'email_sent';
 
+// Structure of refinement question returned from GPT-4o
 export interface RefinementQuestion {
   id: string;
   question: string;
   answer?: string;
 }
 
+// Research session with all related metadata
 export interface ResearchSession {
   id: string;
   userId: string;
@@ -39,16 +40,12 @@ export interface ResearchSession {
   error?: string;
 }
 
+// Prompt + timezone to capture when research started, used by research route
 export interface StartResearchRequest {
   prompt: string;
   timezone?: string;
 }
 
-export interface StartResearchResponse {
-  sessionId: string;
-  status: ResearchStatus;
-  refinementQuestions?: RefinementQuestion[];
-}
 
 export interface SubmitRefinementRequest {
   sessionId: string;
@@ -56,18 +53,3 @@ export interface SubmitRefinementRequest {
   answer: string;
 }
 
-export interface SubmitRefinementResponse {
-  sessionId: string;
-  status: ResearchStatus;
-  nextQuestion?: RefinementQuestion;
-  refinedPrompt?: string;
-}
-
-export interface ResearchResultsResponse {
-  sessionId: string;
-  status: ResearchStatus;
-  openaiResult?: string;
-  geminiResult?: string;
-  pdfUrl?: string;
-  error?: string;
-}

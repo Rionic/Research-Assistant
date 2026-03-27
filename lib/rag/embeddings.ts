@@ -7,6 +7,8 @@ let initPromise: Promise<void> | null = null;
 const MODEL_NAME = 'Xenova/all-MiniLM-L6-v2';
 export const EMBEDDING_DIMENSION = 384;
 
+// Init and generate embeddings - runs on the server, no API call
+// Singleton pattern - model loads once and is reused across requests
 async function initEmbeddingModel(): Promise<void> {
   if (embeddingPipeline) return;
   if (initPromise) return initPromise;
@@ -29,6 +31,6 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     pooling: 'mean',
     normalize: true,
   });
-
+  // Return 384-dimensional vector of the text
   return Array.from(output.data as Float32Array);
 }
