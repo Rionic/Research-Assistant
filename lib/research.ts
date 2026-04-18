@@ -122,9 +122,8 @@ async function performOpenAIResearch(prompt: string): Promise<string> {
 
 async function performGeminiResearch(prompt: string): Promise<string> {
   try {
-    const gemini = getGeminiAI();
-
     // Original: Gemini deep-research-pro-preview (paid, async polling agent)
+    // const gemini = getGeminiAI();
     // console.log('Starting Gemini deep research agent...');
     // const interaction = await gemini.interactions.create({
     //   input: prompt,
@@ -159,27 +158,35 @@ async function performGeminiResearch(prompt: string): Promise<string> {
     // }
     // return result || 'No response from Gemini deep research agent';
 
-    console.log('Starting Gemini 2.0 Flash research agent...');
+    // Swapped to Gemini 2.0 Flash (free tier) — also quota issues, using Groq mixtral instead
+    // const response = await gemini.models.generateContent({
+    //   model: 'gemini-2.0-flash',
+    //   contents: [{ role: 'user', parts: [{ text: `You are a thorough research assistant....\n\n${prompt}` }] }],
+    // });
 
-    const response = await gemini.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
+    console.log('Starting Groq mixtral research agent...');
+
+    const completion = await getOpenAI().chat.completions.create({
+      model: 'mixtral-8x7b-32768',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a thorough research assistant. Provide comprehensive, well-structured research findings with sources and citations. Include specific data points, trends, and actionable insights.',
+        },
         {
           role: 'user',
-          parts: [
-            {
-              text: `You are a thorough research assistant. Provide comprehensive, well-structured research findings with sources and citations. Include specific data points, trends, and actionable insights.\n\n${prompt}`,
-            },
-          ],
+          content: prompt,
         },
       ],
+      temperature: 0.7,
+      max_tokens: 3000,
     });
 
-    const result = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    console.log('Gemini 2.0 Flash research completed, result length:', result.length);
-    return result || 'No response from Gemini';
+    const result = completion.choices[0].message.content || '';
+    console.log('Groq mixtral research completed, result length:', result.length);
+    return result || 'No response from Groq mixtral';
   } catch (error) {
-    console.error('Error with Gemini research agent:', error);
+    console.error('Error with Groq mixtral research agent:', error);
     throw error;
   }
 }
