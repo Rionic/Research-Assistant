@@ -4,9 +4,16 @@ import { adminDb } from '@/lib/firebase-admin';
 import { ResearchSession } from '@/types';
 import { embedResearchResults } from '@/lib/rag';
 
+// Original OpenAI client (GPT-4o) — kept for reference
+// export function getOpenAI() {
+//   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// }
+
+// Groq client using OpenAI-compatible SDK (free tier)
 export function getOpenAI() {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.GROQ_API_KEY || '',
+    baseURL: 'https://api.groq.com/openai/v1',
   });
 }
 
@@ -72,11 +79,30 @@ export async function performResearch(sessionId: string, refinedPrompt: string) 
 }
 
 async function performOpenAIResearch(prompt: string): Promise<string> {
-  
-  console.log('Starting OpenAI deep research agent...');
-  
+
+  // Original: OpenAI GPT-4o
+  // console.log('Starting OpenAI deep research agent...');
+  // const completion = await getOpenAI().chat.completions.create({
+  //   model: 'gpt-4o',
+  //   messages: [
+  //     {
+  //       role: 'system',
+  //       content: 'You are a thorough research assistant. Provide comprehensive, well-structured research findings with sources and citations. Include specific data points, trends, and actionable insights.',
+  //     },
+  //     {
+  //       role: 'user',
+  //       content: prompt,
+  //     },
+  //   ],
+  //   temperature: 0.7,
+  //   max_tokens: 3000,
+  // });
+  // return completion.choices[0].message.content || '';
+
+  console.log('Starting Groq research agent...');
+
   const completion = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o',
+    model: 'llama-3.3-70b-versatile',
     messages: [
       {
         role: 'system',
@@ -98,62 +124,62 @@ async function performGeminiResearch(prompt: string): Promise<string> {
   try {
     const gemini = getGeminiAI();
 
-    console.log('Starting Gemini deep research agent...');
+    // Original: Gemini deep-research-pro-preview (paid, async polling agent)
+    // console.log('Starting Gemini deep research agent...');
+    // const interaction = await gemini.interactions.create({
+    //   input: prompt,
+    //   agent: 'deep-research-pro-preview-12-2025',
+    //   background: true,
+    // });
+    // console.log('Gemini deep research interaction created:', interaction.id);
+    // console.log('Waiting for deep research to complete...');
+    // let completedInteraction = interaction;
+    // let pollCount = 0;
+    // const maxPolls = 120;
+    // while (pollCount < maxPolls) {
+    //   completedInteraction = await gemini.interactions.get(interaction.id);
+    //   console.log(`Polling attempt ${pollCount + 1}, status: ${completedInteraction.status || 'unknown'}`);
+    //   if (completedInteraction.status === 'failed' || completedInteraction.status === 'cancelled') {
+    //     console.error('Deep research failed or was cancelled');
+    //     break;
+    //   }
+    //   if (completedInteraction.status === 'in_progress' || completedInteraction.status === 'requires_action') {
+    //     await new Promise(resolve => setTimeout(resolve, 5000));
+    //     pollCount++;
+    //     continue;
+    //   }
+    //   console.log('Deep research completed!');
+    //   break;
+    // }
+    // if (pollCount >= maxPolls) console.warn('Deep research timed out after polling');
+    // let result = '';
+    // if (completedInteraction.outputs && completedInteraction.outputs.length > 0) {
+    //   const lastOutput = completedInteraction.outputs[completedInteraction.outputs.length - 1];
+    //   if ('text' in lastOutput) result = lastOutput.text || '';
+    // }
+    // return result || 'No response from Gemini deep research agent';
 
-    const interaction = await gemini.interactions.create({
-      input: prompt,
-      agent: 'deep-research-pro-preview-12-2025',
-      background: true,
+    console.log('Starting Gemini 2.0 Flash research agent...');
+
+    const response = await gemini.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `You are a thorough research assistant. Provide comprehensive, well-structured research findings with sources and citations. Include specific data points, trends, and actionable insights.\n\n${prompt}`,
+            },
+          ],
+        },
+      ],
     });
 
-    console.log('Gemini deep research interaction created:', interaction.id);
-    console.log('Waiting for deep research to complete...');
-
-    let completedInteraction = interaction;
-    let pollCount = 0;
-    const maxPolls = 120;
-
-    // If polling takes too long, terminate it
-    while (pollCount < maxPolls) {
-      completedInteraction = await gemini.interactions.get(interaction.id);
-
-      console.log(`Polling attempt ${pollCount + 1}, status: ${completedInteraction.status || 'unknown'}`);
-
-      // Failure, output error & end loop
-      if (completedInteraction.status === 'failed' || completedInteraction.status === 'cancelled') {
-        console.error('Deep research failed or was cancelled');
-        break;
-      }
-
-      // Polling continues
-      if (completedInteraction.status === 'in_progress' || completedInteraction.status === 'requires_action') {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        pollCount++;
-        continue;
-      }
-
-      // Finished
-      console.log('Deep research completed!');
-      break;
-    }
-
-    if (pollCount >= maxPolls) {
-      console.warn('Deep research timed out after polling');
-    }
-
-    // Extract research text from interaction
-    let result = '';
-    if (completedInteraction.outputs && completedInteraction.outputs.length > 0) {
-      const lastOutput = completedInteraction.outputs[completedInteraction.outputs.length - 1];
-      if ('text' in lastOutput) {
-        result = lastOutput.text || '';
-      }
-    }
-
-    console.log('Gemini deep research completed, result length:', result.length);
-    return result || 'No response from Gemini deep research agent';
+    const result = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Gemini 2.0 Flash research completed, result length:', result.length);
+    return result || 'No response from Gemini';
   } catch (error) {
-    console.error('Error with Gemini deep research agent:', error);
+    console.error('Error with Gemini research agent:', error);
     throw error;
   }
 }
