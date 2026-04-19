@@ -2,6 +2,8 @@
 
 A full-stack web application featuring a **Retrieval-Augmented Generation (RAG) pipeline** that performs deep research using both OpenAI and Google Gemini APIs. The system learns from previous research sessions to provide increasingly relevant and context-aware results, delivering comprehensive PDF reports via email.
 
+> **Note:** The live deployment uses [Groq](https://groq.com/) (Llama 3.3 70B + Llama 3.1 8B) in place of OpenAI GPT-4o and Google Gemini to avoid API costs. The original OpenAI and Gemini code is preserved in comments in `lib/research.ts` and `app/api/research/route.ts`.
+
 ## 🌐 Live Demo
 
 **Deployed Application**: [https://research-assistant-7c0m.onrender.com/dashboard](https://research-assistant-7c0m.onrender.com/dashboard)
