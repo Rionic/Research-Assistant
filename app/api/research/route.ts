@@ -99,11 +99,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Initiates call to GPT-4o for refinement questions (or no questions, if prompt is specific)
+// Initiates call to Groq for refinement questions (or no questions, if prompt is specific)
+// Original: model: 'gpt-4o' via OpenAI
 async function getRefinementQuestions(prompt: string) {
   try {
     const completion = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',

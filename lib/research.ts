@@ -164,10 +164,10 @@ async function performGeminiResearch(prompt: string): Promise<string> {
     //   contents: [{ role: 'user', parts: [{ text: `You are a thorough research assistant....\n\n${prompt}` }] }],
     // });
 
-    console.log('Starting Groq mixtral research agent...');
+    console.log('Starting Groq llama-3.1-8b research agent...');
 
     const completion = await getOpenAI().chat.completions.create({
-      model: 'mixtral-8x7b-32768',
+      model: 'llama-3.1-8b-instant',
       messages: [
         {
           role: 'system',
@@ -183,10 +183,10 @@ async function performGeminiResearch(prompt: string): Promise<string> {
     });
 
     const result = completion.choices[0].message.content || '';
-    console.log('Groq mixtral research completed, result length:', result.length);
-    return result || 'No response from Groq mixtral';
+    console.log('Groq llama-3.1-8b research completed, result length:', result.length);
+    return result || 'No response from Groq llama-3.1-8b';
   } catch (error) {
-    console.error('Error with Groq mixtral research agent:', error);
+    console.error('Error with Groq llama-3.1-8b research agent:', error);
     throw error;
   }
 }
